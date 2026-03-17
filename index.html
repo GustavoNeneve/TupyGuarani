@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dicionário Tupy-Guarani</title>
+  <style>
+    :root {
+      --verde:      #2d6a3f;
+      --verde-esc:  #1a4228;
+      --dourado:    #c9872a;
+      --fundo:      #fdf6ec;
+      --texto:      #2b2015;
+      --cinza:      #e8e0d4;
+      --sombra:     rgba(0,0,0,.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--fundo);
+      color: var(--texto);
+      min-height: 100vh;
+    }
+
+    /* ── Cabeçalho ── */
+    header {
+      background: var(--verde-esc);
+      color: #fff;
+      padding: 2rem 1rem 1.4rem;
+      text-align: center;
+    }
+    header h1 {
+      font-size: clamp(1.5rem, 4vw, 2.4rem);
+      letter-spacing: .04em;
+    }
+    header p {
+      margin-top: .4rem;
+      opacity: .8;
+      font-size: .95rem;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: .8rem;
+      background: var(--dourado);
+      color: #fff;
+      border-radius: 999px;
+      padding: .2rem .8rem;
+      font-size: .8rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+    }
+
+    /* ── Barra de busca ── */
+    .busca-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--verde);
+      padding: .8rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
+    #busca {
+      width: 100%;
+      max-width: 640px;
+      padding: .6rem 1rem;
+      border: none;
+      border-radius: 999px;
+      font-size: 1rem;
+      outline: none;
+      background: #fff;
+      color: var(--texto);
+      box-shadow: 0 2px 6px var(--sombra);
+    }
+    #busca::placeholder { color: #999; }
+
+    /* ── Contador ── */
+    .info {
+      text-align: center;
+      padding: .7rem;
+      font-size: .85rem;
+      color: #666;
+    }
+
+    /* ── Alfabeto ── */
+    .alfabeto {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: .3rem;
+      padding: .5rem 1rem .8rem;
+    }
+    .alfabeto button {
+      min-width: 2rem;
+      padding: .25rem .5rem;
+      border: 1px solid var(--verde);
+      border-radius: 4px;
+      background: #fff;
+      color: var(--verde-esc);
+      font-weight: 600;
+      cursor: pointer;
+      font-size: .85rem;
+      transition: background .15s, color .15s;
+    }
+    .alfabeto button:hover,
+    .alfabeto button.ativo {
+      background: var(--verde);
+      color: #fff;
+    }
+
+    /* ── Tabela ── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1rem 3rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px var(--sombra);
+    }
+    thead th {
+      background: var(--verde-esc);
+      color: #fff;
+      padding: .75rem 1rem;
+      text-align: left;
+      font-size: .9rem;
+      letter-spacing: .05em;
+    }
+    tbody tr { border-bottom: 1px solid var(--cinza); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f5efe5; }
+    td {
+      padding: .65rem 1rem;
+      font-size: .95rem;
+      vertical-align: top;
+    }
+    td:first-child {
+      font-weight: 700;
+      color: var(--verde-esc);
+      white-space: nowrap;
+      width: 30%;
+    }
+    td:last-child { color: #444; }
+
+    mark {
+      background: #ffe58a;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
+    /* ── Sem resultados ── */
+    .vazio {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #999;
+      font-size: 1.05rem;
+    }
+
+    /* ── Rodapé ── */
+    footer {
+      background: var(--verde-esc);
+      color: rgba(255,255,255,.65);
+      text-align: center;
+      padding: 1rem;
+      font-size: .8rem;
+    }
+    footer a { color: var(--dourado); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📖 Dicionário Tupy-Guarani</h1>
+  <p>Vocabulário indígena com tradução para o Português</p>
+  <span class="badge" id="total-badge">carregando…</span>
+</header>
+
+<div class="busca-wrapper">
+  <input
+    id="busca"
+    type="search"
+    placeholder="Buscar palavra em Tupy-Guarani ou em Português…"
+    autocomplete="off"
+    autofocus
+  />
+</div>
+
+<div class="container">
+  <div class="info" id="info-contador"></div>
+
+  <div class="alfabeto" id="alfabeto"></div>
+
+  <table id="tabela" aria-label="Dicionário Tupy-Guarani">
+    <thead>
+      <tr>
+        <th>Tupy-Guarani</th>
+        <th>Português</th>
+      </tr>
+    </thead>
+    <tbody id="corpo"></tbody>
+  </table>
+
+  <p class="vazio" id="vazio" hidden>Nenhuma entrada encontrada.</p>
+</div>
+
+<footer>
+  Fontes: <a href="https://dicionariotupi.com.br" target="_blank" rel="noopener">dicionariotupi.com.br</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/GustavoNeneve/TupyGuarani" target="_blank" rel="noopener">GitHub</a>
+</footer>
+
+<script>
+  // ── utilidades ──────────────────────────────────────────────────────────────
+  const normalizar = t =>
+    t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+
+  const escaparHTML = t =>
+    t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const destacar = (texto, termo) => {
+    if (!termo) return escaparHTML(texto);
+    const re = new RegExp(
+      '(' + normalizar(termo).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')',
+      'gi'
+    );
+    const norm = normalizar(texto);
+    let html = '', i = 0;
+    let m;
+    while ((m = re.exec(norm)) !== null) {
+      html += escaparHTML(texto.slice(i, m.index));
+      html += '<mark>' + escaparHTML(texto.slice(m.index, m.index + m[0].length)) + '</mark>';
+      i = m.index + m[0].length;
+    }
+    html += escaparHTML(texto.slice(i));
+    return html;
+  };
+
+  // ── estado ──────────────────────────────────────────────────────────────────
+  let entradas = [];
+  let filtroLetra = '';
+
+  const corpo        = document.getElementById('corpo');
+  const vazio        = document.getElementById('vazio');
+  const infoContador = document.getElementById('info-contador');
+  const totalBadge   = document.getElementById('total-badge');
+  const inputBusca   = document.getElementById('busca');
+
+  // ── renderização ────────────────────────────────────────────────────────────
+  function renderizar(termo) {
+    const normTermo = normalizar(termo || '');
+    const normLetra = normalizar(filtroLetra);
+
+    const filtradas = entradas.filter(e => {
+      const palavra = normalizar(e.tupy_guarani);
+      const significado = normalizar(e.portugues);
+
+      if (normLetra && !palavra.startsWith(normLetra)) return false;
+      if (!normTermo) return true;
+      return palavra.includes(normTermo) || significado.includes(normTermo);
+    });
+
+    corpo.innerHTML = filtradas.map(e => `
+      <tr>
+        <td>${destacar(e.tupy_guarani, termo)}</td>
+        <td>${destacar(e.portugues, termo)}</td>
+      </tr>
+    `).join('');
+
+    vazio.hidden = filtradas.length > 0;
+    document.getElementById('tabela').hidden = filtradas.length === 0;
+
+    infoContador.textContent =
+      filtradas.length === entradas.length
+        ? `${entradas.length} entradas no total`
+        : `${filtradas.length} de ${entradas.length} entradas`;
+  }
+
+  // ── alfabeto ─────────────────────────────────────────────────────────────────
+  function construirAlfabeto() {
+    const letras = [...new Set(
+      entradas.map(e => normalizar(e.tupy_guarani)[0]?.toUpperCase()).filter(Boolean)
+    )].sort();
+
+    const div = document.getElementById('alfabeto');
+
+    // botão "Todas"
+    const btnTodas = document.createElement('button');
+    btnTodas.textContent = 'Todas';
+    btnTodas.classList.add('ativo');
+    btnTodas.addEventListener('click', () => {
+      filtroLetra = '';
+      inputBusca.value = '';
+      document.querySelectorAll('.alfabeto button').forEach(b => b.classList.remove('ativo'));
+      btnTodas.classList.add('ativo');
+      renderizar('');
+    });
+    div.appendChild(btnTodas);
+
+    letras.forEach(letra => {
+      const btn = document.createElement('button');
+      btn.textContent = letra;
+      btn.addEventListener('click', () => {
+        filtroLetra = letra.toLowerCase();
+        inputBusca.value = '';
+        document.querySelectorAll('.alfabeto button').forEach(b => b.classList.remove('ativo'));
+        btn.classList.add('ativo');
+        renderizar('');
+      });
+      div.appendChild(btn);
+    });
+  }
+
+  // ── busca ao digitar ─────────────────────────────────────────────────────────
+  inputBusca.addEventListener('input', () => {
+    filtroLetra = '';
+    document.querySelectorAll('.alfabeto button').forEach(b => b.classList.remove('ativo'));
+    document.querySelector('.alfabeto button')?.classList.add('ativo'); // "Todas"
+    renderizar(inputBusca.value.trim());
+  });
+
+  // ── carregamento ─────────────────────────────────────────────────────────────
+  fetch('dicionario.json')
+    .then(r => {
+      if (!r.ok) throw new Error('Falha ao carregar dicionario.json');
+      return r.json();
+    })
+    .then(dados => {
+      entradas = dados.entradas.slice().sort((a, b) =>
+        normalizar(a.tupy_guarani).localeCompare(normalizar(b.tupy_guarani))
+      );
+      totalBadge.textContent = `${entradas.length} palavras`;
+      construirAlfabeto();
+      renderizar('');
+    })
+    .catch(err => {
+      corpo.innerHTML = `<tr><td colspan="2" style="color:red;padding:1rem">
+        Erro ao carregar o dicionário: ${escaparHTML(err.message)}
+      </td></tr>`;
+      totalBadge.textContent = 'erro';
+      console.error(err);
+    });
+</script>
+</body>
+</html>
