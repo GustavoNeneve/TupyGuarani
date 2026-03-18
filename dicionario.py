@@ -1,6 +1,7 @@
 """
-Dicionário Tupy-Guarani → Português
-Permite buscar palavras em Tupy-Guarani e obter seus significados em Português.
+Dicionário de Línguas Indígenas → Português
+Permite buscar palavras de diversas línguas indígenas brasileiras e obter seus
+significados em Português.
 """
 
 import json
@@ -33,30 +34,38 @@ def carregar_dicionario(caminho: str = _CAMINHO_JSON) -> list:
     return dados["entradas"]
 
 
-def buscar(palavra: str, entradas: list = None) -> list:
+def buscar(palavra: str, entradas: list = None, lingua: str = None) -> list:
     """
-    Busca uma palavra em Tupy-Guarani no dicionário.
+    Busca uma palavra indígena no dicionário.
 
     Parâmetros
     ----------
     palavra : str
-        Palavra ou trecho em Tupy-Guarani a ser buscado.
+        Palavra ou trecho a ser buscado.
     entradas : list, opcional
         Lista de entradas já carregadas. Se omitido, carrega do arquivo JSON.
+    lingua : str, opcional
+        Filtra os resultados pela língua especificada. Se omitido, busca em
+        todas as línguas.
 
     Retorno
     -------
     list
-        Lista de dicionários com as chaves ``tupy_guarani`` e ``portugues``
-        para cada entrada que corresponda à busca.
+        Lista de dicionários com as chaves ``tupy_guarani``, ``portugues`` e,
+        opcionalmente, ``lingua`` para cada entrada que corresponda à busca.
     """
     if entradas is None:
         entradas = carregar_dicionario()
     termo = _normalizar(palavra)
+    lingua_norm = _normalizar(lingua) if lingua else None
     return [
         entrada
         for entrada in entradas
         if termo in _normalizar(entrada["tupy_guarani"])
+        and (
+            lingua_norm is None
+            or lingua_norm == _normalizar(entrada.get("lingua", ""))
+        )
     ]
 
 
@@ -73,18 +82,32 @@ if __name__ == "__main__":
     entradas = carregar_dicionario()
 
     if len(sys.argv) < 2:
-        print("Uso: python dicionario.py <palavra>")
+        print("Uso: python dicionario.py <palavra> [--lingua <língua>]")
         print("\nTodas as entradas disponíveis:\n")
         for entrada in listar_todas(entradas):
-            print(f"  {entrada['tupy_guarani']:20s} → {entrada['portugues']}")
+            lingua_info = f"  [{entrada['lingua']}]" if entrada.get("lingua") else ""
+            print(f"  {entrada['tupy_guarani']:20s} → {entrada['portugues']}{lingua_info}")
         sys.exit(0)
 
-    termo = " ".join(sys.argv[1:])
-    resultados = buscar(termo, entradas)
+    # Parse optional --lingua argument
+    args = sys.argv[1:]
+    lingua_filtro = None
+    if "--lingua" in args:
+        idx = args.index("--lingua")
+        if idx + 1 < len(args):
+            lingua_filtro = args[idx + 1]
+            args = args[:idx] + args[idx + 2:]
+
+    termo = " ".join(args)
+    resultados = buscar(termo, entradas, lingua=lingua_filtro)
 
     if not resultados:
-        print(f"Nenhuma entrada encontrada para: '{termo}'")
+        msg = f"Nenhuma entrada encontrada para: '{termo}'"
+        if lingua_filtro:
+            msg += f" (língua: {lingua_filtro})"
+        print(msg)
         sys.exit(1)
 
     for resultado in resultados:
-        print(f"{resultado['tupy_guarani']} → {resultado['portugues']}")
+        lingua_info = f"  [{resultado['lingua']}]" if resultado.get("lingua") else ""
+        print(f"{resultado['tupy_guarani']} → {resultado['portugues']}{lingua_info}")

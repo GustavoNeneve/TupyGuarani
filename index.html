@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dicionário Tupy-Guarani</title>
+  <title>Dicionário de Línguas Indígenas</title>
   <style>
     :root {
       --verde:      #2d6a3f;
@@ -163,7 +163,41 @@
       font-size: 1.05rem;
     }
 
-    /* ── Rodapé ── */
+    /* ── Filtro de língua ── */
+    .filtro-lingua-wrapper {
+      display: flex;
+      justify-content: center;
+      padding: .5rem 1rem .3rem;
+      background: var(--verde);
+    }
+    #filtro-lingua {
+      width: 100%;
+      max-width: 640px;
+      padding: .45rem 1rem;
+      border: none;
+      border-radius: 999px;
+      font-size: .9rem;
+      outline: none;
+      background: #fff;
+      color: var(--texto);
+      box-shadow: 0 2px 6px var(--sombra);
+    }
+
+    /* ── Tag de língua nas células ── */
+    .lingua-tag {
+      display: inline-block;
+      font-size: .72rem;
+      font-weight: 600;
+      background: var(--verde);
+      color: #fff;
+      border-radius: 3px;
+      padding: .1rem .4rem;
+      margin-left: .4rem;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+
     footer {
       background: var(--verde-esc);
       color: rgba(255,255,255,.65);
@@ -177,8 +211,8 @@
 <body>
 
 <header>
-  <h1>📖 Dicionário Tupy-Guarani</h1>
-  <p>Vocabulário indígena com tradução para o Português</p>
+  <h1>📖 Dicionário de Línguas Indígenas</h1>
+  <p>Vocabulário de línguas indígenas brasileiras com tradução para o Português</p>
   <span class="badge" id="total-badge">carregando…</span>
 </header>
 
@@ -186,10 +220,16 @@
   <input
     id="busca"
     type="search"
-    placeholder="Buscar palavra em Tupy-Guarani ou em Português…"
+    placeholder="Buscar palavra indígena ou significado em Português…"
     autocomplete="off"
     autofocus
   />
+</div>
+
+<div class="filtro-lingua-wrapper">
+  <select id="filtro-lingua">
+    <option value="">Todas as línguas</option>
+  </select>
 </div>
 
 <div class="container">
@@ -197,10 +237,10 @@
 
   <div class="alfabeto" id="alfabeto"></div>
 
-  <table id="tabela" aria-label="Dicionário Tupy-Guarani">
+  <table id="tabela" aria-label="Dicionário de Línguas Indígenas">
     <thead>
       <tr>
-        <th>Tupy-Guarani</th>
+        <th>Palavra</th>
         <th>Português</th>
       </tr>
     </thead>
@@ -245,33 +285,42 @@
   // ── estado ──────────────────────────────────────────────────────────────────
   let entradas = [];
   let filtroLetra = '';
+  let filtroLingua = '';
 
   const corpo        = document.getElementById('corpo');
   const vazio        = document.getElementById('vazio');
   const infoContador = document.getElementById('info-contador');
   const totalBadge   = document.getElementById('total-badge');
   const inputBusca   = document.getElementById('busca');
+  const selectLingua = document.getElementById('filtro-lingua');
 
   // ── renderização ────────────────────────────────────────────────────────────
   function renderizar(termo) {
     const normTermo = normalizar(termo || '');
     const normLetra = normalizar(filtroLetra);
+    const normLingua = normalizar(filtroLingua);
 
     const filtradas = entradas.filter(e => {
       const palavra = normalizar(e.tupy_guarani);
       const significado = normalizar(e.portugues);
 
       if (normLetra && !palavra.startsWith(normLetra)) return false;
+      if (normLingua && normalizar(e.lingua || '') !== normLingua) return false;
       if (!normTermo) return true;
       return palavra.includes(normTermo) || significado.includes(normTermo);
     });
 
-    corpo.innerHTML = filtradas.map(e => `
-      <tr>
-        <td>${destacar(e.tupy_guarani, termo)}</td>
-        <td>${destacar(e.portugues, termo)}</td>
-      </tr>
-    `).join('');
+    corpo.innerHTML = filtradas.map(e => {
+      const linguaTag = e.lingua
+        ? `<span class="lingua-tag">${escaparHTML(e.lingua)}</span>`
+        : '';
+      return `
+        <tr>
+          <td>${destacar(e.tupy_guarani, termo)}${linguaTag}</td>
+          <td>${destacar(e.portugues, termo)}</td>
+        </tr>
+      `;
+    }).join('');
 
     vazio.hidden = filtradas.length > 0;
     document.getElementById('tabela').hidden = filtradas.length === 0;
@@ -317,6 +366,29 @@
     });
   }
 
+  // ── filtro de língua ─────────────────────────────────────────────────────────
+  function construirFiltroLingua() {
+    const linguas = [...new Set(
+      entradas.map(e => e.lingua).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, 'pt'));
+
+    linguas.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l;
+      opt.textContent = l;
+      selectLingua.appendChild(opt);
+    });
+  }
+
+  selectLingua.addEventListener('change', () => {
+    filtroLingua = selectLingua.value;
+    filtroLetra = '';
+    inputBusca.value = '';
+    document.querySelectorAll('.alfabeto button').forEach(b => b.classList.remove('ativo'));
+    document.querySelector('.alfabeto button')?.classList.add('ativo');
+    renderizar('');
+  });
+
   // ── busca ao digitar ─────────────────────────────────────────────────────────
   inputBusca.addEventListener('input', () => {
     filtroLetra = '';
@@ -337,6 +409,7 @@
       );
       totalBadge.textContent = `${entradas.length} palavras`;
       construirAlfabeto();
+      construirFiltroLingua();
       renderizar('');
     })
     .catch(err => {
